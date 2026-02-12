@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glub 3D</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #1a1a2e; }
+        #info {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-family: sans-serif;
+            pointer-events: none;
+            user-select: none;
+            text-shadow: 0 1px 2px black;
+        }
+        b { color: #ff4081; }
+    </style>
+    <!-- Importamos Three.js desde CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div id="info">
+        Mueve a Glub con <b>W A S D</b> o <b>Flechas</b><br>
+        Salta con <b>ESPACIO</b><br>
+        Usa el <b>MOUSE</b> para rotar la cámara
+    </div>
+
+    <script>
+        // --- CONFIGURACIÓN E INICIALIZACIÓN ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e);
+        scene.fog = new THREE.Fog(0x1a1a2e, 10, 50);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 10);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        // --- LUCES ---
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
+        scene.add(hemiLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 7);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+
+        // --- SUELO ---
+        const planeGeometry = new THREE.PlaneGeometry(100, 100);
+        const planeMaterial = new THREE.MeshPhongMaterial({ color: 0x16213e, depthWrite: false });
+        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.rotation.x = -Math.PI / 2;
+        plane.receiveShadow = true;
+        scene.add(plane);
+
+        const grid = new THREE.GridHelper(100, 40, 0x333333, 0x222222);
+        scene.add(grid);
+
+        // --- CONSTRUCCIÓN DE GLUB (Personaje) ---
+        const glubGroup = new THREE.Group();
+        scene.add(glubGroup);
+
+        // Materiales
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xff4081, roughness: 0.3, metalness: 0.1 });
+        const whiteMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const blackMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const limbMat = new THREE.MeshStandardMaterial({ color: 0xc60055, roughness: 0.5 });
+
+        // 1. Cuerpo
+        const bodyGeo = new THREE.SphereGeometry(1, 32, 32);
+        const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+        bodyMesh.position.y = 1.5;
+        bodyMesh.castShadow = true;
+        glubGroup.add(bodyMesh);
+
+        // 2. Ojos
+        const eyeGeo = new THREE.SphereGeometry(0.25, 16, 16);
+        const pupilGeo = new THREE.SphereGeometry(0.1, 8, 8);
+
+        const leftEye = new THREE.Mesh(eyeGeo, whiteMat);
+        leftEye.position.set(-0.35, 1.8, 0.85);
+        glubGroup.add(leftEye);
+        const leftPupil = new THREE.Mesh(pupilGeo, blackMat);
+        leftPupil.position.z = 0.22;
+        leftEye.add(leftPupil);
+
+        const rightEye = new THREE.Mesh(eyeGeo, whiteMat);
+        rightEye.position.set(0.35, 1.8, 0.85);
+        glubGroup.add(rightEye);
+        const rightPupil = new THREE.Mesh(pupilGeo, blackMat);
+        rightPupil.position.z = 0.22;
+        rightEye.add(rightPupil);
+
+        // 3. Pies (Grupos para poder rotarlos o añadir detalles)
+        function createFoot() {
+            const footGroup = new THREE.Group();
+            
+            // Zapato principal
+            const footBaseGeo = new THREE.SphereGeometry(0.4, 16, 16);
+            const footBase = new THREE.Mesh(footBaseGeo, limbMat);
+            footBase.scale.set(1, 0.6, 1.8);
+            footBase.castShadow = true;
+            footGroup.add(footBase);
+
+            // Dedo gordo (para saber dirección)
+            const toeGeo = new THREE.SphereGeometry(0.2, 16, 16);
+            const toe = new THREE.Mesh(toeGeo, limbMat);
+            toe.position.set(0, -0.1, -0.7); // En frente (-Z)
+            toe.scale.set(1.5, 0.8, 1);
+            toe.castShadow = true;
+            footGroup.add(toe);
+
+            return footGroup;
+        }
+        
+        const leftFoot = createFoot();
+        glubGroup.add(leftFoot);
+
+        const rightFoot = createFoot();
+        glubGroup.add(rightFoot);
+
+        // 4. Manos
+        const handGeo = new THREE.SphereGeometry(0.3, 16, 16);
+        const leftHand = new THREE.Mesh(handGeo, limbMat);
+        leftHand.castShadow = true;
+        glubGroup.add(leftHand);
+
+        const rightHand = new THREE.Mesh(handGeo, limbMat);
+        rightHand.castShadow = true;
+        glubGroup.add(rightHand);
+
+        // --- LÓGICA DE JUEGO ---
+        const playerState = {
+            speed: 0.15, // Velocidad de movimiento
+            turnSpeed: 0.1,
+            velocity: new THREE.Vector3(),
+            isJumping: false,
+            jumpVelocity: 0,
+            gravity: 0.02,
+            walkTime: 0
+        };
+
+        // CALIBRACIÓN DE ANIMACIÓN:
+        // Stride (longitud paso) = 0.6 * 2 (ida y vuelta) = 1.2
+        // Distancia recorrida en PI radianes = Speed * (PI / AnimSpeed)
+        // 1.2 = 0.15 * (3.1416 / AnimSpeed)
+        // AnimSpeed ideal ~= 0.4
+        const ANIMATION_SPEED_SYNC = 0.4; 
+        const STRIDE_LENGTH = 0.6;
+
+        const keys = { w: false, a: false, s: false, d: false, " ": false };
+
+        window.addEventListener('keydown', (e) => {
+            const k = e.key.toLowerCase();
+            if (keys.hasOwnProperty(k) || k === " ") keys[k] = true;
+            if (e.key === "ArrowUp") keys.w = true;
+            if (e.key === "ArrowDown") keys.s = true;
+            if (e.key === "ArrowLeft") keys.a = true;
+            if (e.key === "ArrowRight") keys.d = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            const k = e.key.toLowerCase();
+            if (keys.hasOwnProperty(k) || k === " ") keys[k] = false;
+            if (e.key === "ArrowUp") keys.w = false;
+            if (e.key === "ArrowDown") keys.s = false;
+            if (e.key === "ArrowLeft") keys.a = false;
+            if (e.key === "ArrowRight") keys.d = false;
+        });
+
+        let mouseX = 0;
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.002;
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 1. Procesar Input Movimiento
+            let forward = 0;
+            let turn = 0;
+
+            if (keys.w) forward += 1;
+            if (keys.s) forward -= 1;
+            if (keys.a) turn += 1;
+            if (keys.d) turn -= 1;
+
+            // Rotación
+            glubGroup.rotation.y += turn * playerState.turnSpeed;
+
+            // Dirección y Velocidad
+            const direction = new THREE.Vector3(0, 0, -1);
+            direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), glubGroup.rotation.y);
+            
+            if (forward !== 0) {
+                playerState.velocity.x = direction.x * playerState.speed * forward;
+                playerState.velocity.z = direction.z * playerState.speed * forward;
+                
+                // Si vamos hacia atrás (forward < 0), invertimos la animación para que coincida
+                const timeStep = forward > 0 ? ANIMATION_SPEED_SYNC : -ANIMATION_SPEED_SYNC;
+                playerState.walkTime += timeStep;
+            } else {
+                playerState.velocity.x *= 0.8;
+                playerState.velocity.z *= 0.8;
+                
+                // Resetear pies a posición neutral suavemente
+                const mod = playerState.walkTime % (Math.PI * 2);
+                if (mod > 0.1 && mod < Math.PI * 2 - 0.1) {
+                    playerState.walkTime += ANIMATION_SPEED_SYNC; 
+                }
+            }
+
+            glubGroup.position.x += playerState.velocity.x;
+            glubGroup.position.z += playerState.velocity.z;
+
+            // 2. Salto
+            if (keys[" "] && !playerState.isJumping) {
+                playerState.isJumping = true;
+                playerState.jumpVelocity = 0.5;
+                bodyMesh.scale.set(0.8, 1.2, 0.8);
+            }
+
+            if (playerState.isJumping) {
+                glubGroup.position.y += playerState.jumpVelocity;
+                playerState.jumpVelocity -= playerState.gravity;
+
+                if (glubGroup.position.y <= 0) {
+                    glubGroup.position.y = 0;
+                    playerState.isJumping = false;
+                    playerState.jumpVelocity = 0;
+                    bodyMesh.scale.set(1.3, 0.7, 1.3);
+                } else {
+                    bodyMesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+                }
+            } else {
+                bodyMesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.15);
+            }
+
+            // 3. Animación de Pasos
+            const t = playerState.walkTime;
+            const footBaseY = 0.3;
+            const footDist = 0.6;
+            
+            // Pie Izquierdo
+            const lf_lift = Math.max(0, Math.sin(t)); // Solo sube cuando sin > 0
+            // Math.cos(t): 
+            // t=0 (Inicio ciclo aire): cos=1 (Atrás) -> Error visual previo?
+            // Corregido: Fase Swing (Aire) debe ir de ATRÁS hacia ADELANTE.
+            // Fase Stance (Suelo) debe ir de ADELANTE hacia ATRÁS.
+            
+            // Usamos Cosine normal:
+            // 0 -> PI (Aire): 1 (Atrás) -> -1 (Adelante). CORRECTO para dar el paso.
+            // PI -> 2PI (Suelo): -1 (Adelante) -> 1 (Atrás). CORRECTO para empujar el suelo.
+            const lf_z = Math.cos(t) * STRIDE_LENGTH;
+            
+            leftFoot.position.set(-footDist, footBaseY + lf_lift * 0.5, lf_z);
+            // Inclinación del pie al caminar
+            leftFoot.rotation.x = -lf_lift * 0.5; 
+
+            // Pie Derecho (desfase PI)
+            const rf_lift = Math.max(0, Math.sin(t + Math.PI));
+            const rf_z = Math.cos(t + Math.PI) * STRIDE_LENGTH;
+
+            rightFoot.position.set(footDist, footBaseY + rf_lift * 0.5, rf_z);
+            rightFoot.rotation.x = -rf_lift * 0.5;
+
+            // Manos
+            const handBaseY = 1.5;
+            const handDist = 1.1;
+            leftHand.position.set(-handDist, handBaseY + Math.cos(t) * 0.2, Math.sin(t) * 0.4);
+            rightHand.position.set(handDist, handBaseY + Math.cos(t + Math.PI) * 0.2, Math.sin(t + Math.PI) * 0.4);
+
+            // Bobbing del cuerpo (rebotar al andar)
+            if (!playerState.isJumping) {
+                // Sube cuando un pie está pasando por el centro (apoyo máximo)
+                bodyMesh.position.y = 1.5 + Math.abs(Math.sin(t)) * 0.1; 
+            }
+
+            // Ojos y Cámara
+            leftPupil.position.x = turn * 0.05;
+            rightPupil.position.x = turn * 0.05;
+
+            const relativeCameraOffset = new THREE.Vector3(0, 5, 12);
+            const cameraOffset = relativeCameraOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), mouseX);
+            const targetPos = glubGroup.position.clone().add(cameraOffset);
+            camera.position.lerp(targetPos, 0.05);
+            camera.lookAt(glubGroup.position.clone().add(new THREE.Vector3(0, 1, 0)));
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>

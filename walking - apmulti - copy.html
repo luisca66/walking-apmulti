@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absolute Pitch Walking Training</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #1e293b; /* Fondo oscuro mientras carga */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        /* --- PANTALLA DE MENÚ --- */
+        #main-menu {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.98);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            color: white;
+            overflow-y: auto; /* Permitir scroll si la pantalla es pequeña */
+        }
+        .menu-title {
+            color: #fbbf24; /* Amber-400 */
+            font-size: 2rem;
+            margin: 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+            text-align: center;
+        }
+        .config-section {
+            background: #0f172a;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            max-width: 1000px; /* Más ancho para las 12 columnas */
+            width: 95%;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        select {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #1e293b;
+            color: white;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            margin-left: 10px;
+            cursor: pointer;
+            outline: none;
+        }
+        select:focus { border-color: #fbbf24; }
+
+        /* GRID DE NOTAS TIPO TABLA */
+        .notes-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr); /* 12 Columnas exactas */
+            gap: 6px;
+            margin: 20px 0;
+            justify-items: center;
+            background: black;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        /* Ajuste responsive para pantallas muy pequeñas */
+        @media (max-width: 800px) {
+            .notes-grid {
+                grid-template-columns: repeat(6, 1fr); /* Bajar a 6 columnas en móviles */
+            }
+        }
+
+        .note-check {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 5px;
+            font-size: 13px;
+            color: #ccc;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+            transition: background 0.2s;
+        }
+        .note-check:hover { background: #1e293b; color: white; }
+        .note-check input { 
+            cursor: pointer; 
+            margin: 0;
+            width: 16px; 
+            height: 16px;
+            accent-color: #fbbf24;
+        }
+        
+        .btn-action {
+            background: #fbbf24;
+            color: #0f172a;
+            border: none;
+            padding: 12px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 25px;
+            transition: transform 0.1s, box-shadow 0.2s;
+        }
+        .btn-action:hover {
+            background: #f59e0b;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+            transform: scale(1.02);
+        }
+        .controls-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .btn-secondary {
+            background: #334155;
+            border: 1px solid #475569;
+            color: #e2e8f0;
+            padding: 8px 16px;
+            font-size: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-secondary:hover { background: #475569; color: white; }
+
+        /* --- UI DEL JUEGO --- */
+        #game-ui {
+            display: none; /* Oculto al inicio */
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; /* Permitir clicks al canvas */
+        }
+        #hud-top {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            pointer-events: none;
+        }
+        .score-board {
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 18px;
+            border: 1px solid #475569;
+            font-family: monospace;
+        }
+        .status-msg {
+            margin-top: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px black;
+            height: 35px; /* Espacio reservado */
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        /* --- TECLADO INFERIOR --- */
+        #keyboard-container {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            pointer-events: auto; /* Habilitar clicks */
+            flex-wrap: wrap;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+        .key-btn {
+            background: linear-gradient(to bottom, #334155, #0f172a);
+            border: 1px solid #475569;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #020617;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .key-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #020617;
+        }
+        .key-btn:hover { background: linear-gradient(to bottom, #475569, #1e293b); }
+        /* Estilos de feedback */
+        .key-correct { background: #22c55e !important; box-shadow: 0 4px 0 #14532d !important; border-color: #4ade80; }
+        .key-wrong { background: #ef4444 !important; box-shadow: 0 4px 0 #7f1d1d !important; border-color: #f87171; }
+        
+        /* Instrucciones flotantes */
+        #controls-hint {
+            position: absolute;
+            bottom: 100px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            font-size: 15px;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px black;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- MENÚ DE CONFIGURACIÓN -->
+    <div id="main-menu">
+        <div class="menu-title">Configurar Modo Clásico</div>
+        
+        <div class="config-section">
+            <div style="margin-bottom: 25px;">
+                <label style="font-size: 18px; color: #cbd5e1;">Selecciona el timbre:</label>
+                <select id="instrument-select">
+                    <option value="Piano">Piano</option>
+                    <option value="Cello">Cello</option>
+                    <option value="Corno">Corno</option>
+                    <option value="Coro">Coro</option>
+                    <option value="Fagot">Fagot</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 15px; font-size: 18px; color: #cbd5e1;">Selecciona las notas activas:</div>
+            
+            <!-- Grid Dinámico -->
+            <div class="notes-grid" id="notes-grid"></div>
+            
+            <div class="controls-row">
+                <button class="btn-secondary" onclick="toggleAllNotes(true)">Seleccionar Todo</button>
+                <button class="btn-secondary" onclick="toggleAllNotes(false)">Deseleccionar Todo</button>
+            </div>
+
+            <button class="btn-action" id="btn-start">Empezar a Practicar</button>
+        </div>
+    </div>
+
+    <!-- UI DEL JUEGO -->
+    <div id="game-ui">
+        <div id="hud-top">
+            <div class="score-board">Aciertos: <span id="score-val" style="color:#fbbf24">0</span></div>
+            <div id="feedback-msg" class="status-msg" style="color: white;"></div>
+        </div>
+
+        <div id="controls-hint">Usa <b>W A S D</b> para moverte. Choca con los cubos para escuchar.</div>
+
+        <div id="keyboard-container">
+            <!-- Botones generados dinámicamente -->
+        </div>
+    </div>
+
+    <!-- Audio Loops -->
+    <audio id="bgMusic" src="https://stormstudios.com.mx/wp-content/Music/nature-loop.mp3" loop></audio>
+    <audio id="stepsSound" src="https://stormstudios.com.mx/wp-content/Music/steps.mp3" loop></audio>
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        // --- CONSTANTES Y ESTADO ---
+        const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        
+        // Mapeo de colores "Cosmic Ear"
+        const NOTE_COLORS = [
+            0xff0000, // C - Rojo
+            0xff4500, // C# - Naranja rojizo
+            0xffa500, // D - Naranja
+            0xffd700, // D# - Oro
+            0xffff00, // E - Amarillo
+            0x9acd32, // F - Verde amarillento
+            0x008000, // F# - Verde
+            0x00ced1, // G - Turquesa
+            0x0000ff, // G# - Azul
+            0x8a2be2, // A - Violeta azulado
+            0xee82ee, // A# - Violeta
+            0xc71585  // B - Magenta
+        ];
+
+        const BASE_AUDIO_URL = "https://stormstudios.com.mx/wp-content/App%20AP%20samples";
+
+        let appState = {
+            instrument: "Piano",
+            // Ahora guardamos objetos { noteIndex: 0, octave: 4 }
+            activeNotesPool: [], 
+            score: 0,
+            lastCollidedObject: null,
+            currentChallenge: null, // Objeto { noteIndex, octave }
+            isPlaying: false
+        };
+
+        // --- INICIALIZACIÓN DE UI MENÚ (GRID COMPLETO) ---
+        const notesGrid = document.getElementById('notes-grid');
+        
+        // Rango de Octavas: 2, 3, 4, 5, 6
+        const startOctave = 2;
+        const endOctave = 6;
+
+        function createCheckbox(noteIndex, octave) {
+            const label = document.createElement('label');
+            label.className = 'note-check';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            // Guardamos la data como string JSON para facilitar lectura
+            checkbox.value = JSON.stringify({ noteIndex: noteIndex, octave: octave });
+            checkbox.checked = false; // Por defecto deseleccionadas
+            
+            label.appendChild(checkbox);
+            // Etiqueta ej: C#4
+            label.appendChild(document.createTextNode(`${NOTES[noteIndex]}${octave}`));
+            notesGrid.appendChild(label);
+        }
+
+        // Generar octavas completas (2 a 6)
+        for (let oct = startOctave; oct <= endOctave; oct++) {
+            for (let i = 0; i < 12; i++) {
+                createCheckbox(i, oct);
+            }
+        }
+        // Agregar C7 al final (solo C7)
+        createCheckbox(0, 7);
+
+        // Rellenar espacios vacíos en la última fila para que el grid se vea bien (si C7 queda solo)
+        // La fila tiene 12 columnas. C7 es la 1ra. Necesitamos 11 huecos vacíos.
+        for(let k=0; k<11; k++) {
+            const spacer = document.createElement('div');
+            notesGrid.appendChild(spacer);
+        }
+
+        function toggleAllNotes(state) {
+            const checks = notesGrid.querySelectorAll('input[type="checkbox"]');
+            checks.forEach(c => c.checked = state);
+        }
+
+        document.getElementById('btn-start').addEventListener('click', () => {
+            // Leer configuración
+            const checks = notesGrid.querySelectorAll('input[type="checkbox"]:checked');
+            
+            if (checks.length === 0) {
+                alert("Selecciona al menos una nota para practicar.");
+                return;
+            }
+
+            // Construir el pool de notas disponibles
+            appState.activeNotesPool = Array.from(checks).map(c => JSON.parse(c.value));
+            appState.instrument = document.getElementById('instrument-select').value;
+
+            // Iniciar Juego
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'block';
+            
+            // Audio Context desbloqueo
+            playSilentAudio();
+            const bgMusic = document.getElementById('bgMusic');
+            bgMusic.volume = 0.4;
+            bgMusic.play().catch(e => console.log("Click para iniciar audio"));
+            
+            const steps = document.getElementById('stepsSound');
+            steps.volume = 0.3;
+
+            // Generar teclado de juego (las 12 notas base para responder)
+            generateGameKeyboard();
+
+            // Iniciar Three.js
+            initGame();
+        });
+
+        function generateGameKeyboard() {
+            const container = document.getElementById('keyboard-container');
+            container.innerHTML = '';
+            
+            // El teclado de respuesta siempre son las 12 notas base
+            // (Para adivinar la "clase" de nota, independientemente de la octava)
+            NOTES.forEach((note, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'key-btn';
+                btn.textContent = note;
+                btn.onclick = () => checkAnswer(index, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        // --- SISTEMA DE AUDIO DEL JUEGO ---
+        function getSampleUrl(instrument, noteIndex, octave) {
+            // FIX: Reemplazar # con %23 para que la URL sea válida
+            const noteName = NOTES[noteIndex].replace('#', '%23');
+            return `${BASE_AUDIO_URL}/${instrument}/${noteName}${octave}.mp3`;
+        }
+
+        function playNoteSound(noteIndex, octave) {
+            const url = getSampleUrl(appState.instrument, noteIndex, octave);
+            const audio = new Audio(url);
+            audio.volume = 1.0;
+            audio.play().catch(e => console.error("Error playing note:", e));
+        }
+
+        function playSilentAudio() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            ctx.resume();
+        }
+
+        // --- LÓGICA DE RESPUESTA ---
+        function checkAnswer(guessedIndex, btnElement) {
+            const feedback = document.getElementById('feedback-msg');
+            
+            if (!appState.currentChallenge) {
+                feedback.textContent = "¡Busca un cubo!";
+                feedback.style.color = "#fbbf24";
+                return;
+            }
+
+            // Comparamos solo el índice de la nota (Clase), la octava no importa para la respuesta
+            if (guessedIndex === appState.currentChallenge.noteIndex) {
+                // CORRECTO
+                feedback.textContent = "¡Correcto! " + NOTES[guessedIndex];
+                feedback.style.color = "#4ade80"; // Green
+                
+                // Efecto visual en botón
+                btnElement.classList.add('key-correct');
+                setTimeout(() => btnElement.classList.remove('key-correct'), 500);
+
+                // Modificar objeto 3D
+                if (appState.lastCollidedObject) {
+                    if (!appState.lastCollidedObject.userData.solved) {
+                        appState.score++;
+                        document.getElementById('score-val').textContent = appState.score;
+                        
+                        // Hacer transparente y desactivar
+                        appState.lastCollidedObject.material.transparent = true;
+                        appState.lastCollidedObject.material.opacity = 0.2;
+                        appState.lastCollidedObject.userData.solved = true;
+                    }
+                }
+                
+                appState.currentChallenge = null; // Reset challenge
+                appState.lastCollidedObject = null;
+
+            } else {
+                // INCORRECTO
+                feedback.textContent = "Intenta de nuevo";
+                feedback.style.color = "#f87171"; // Red
+                btnElement.classList.add('key-wrong');
+                setTimeout(() => btnElement.classList.remove('key-wrong'), 500);
+            }
+        }
+
+        // --- THREE.JS JUEGO ---
+        let scene, camera, renderer, controls;
+        let playerGroup;
+        let limbs = { armL: null, armR: null, legL: null, legR: null };
+        let keys = { w: false, a: false, s: false, d: false };
+        let noteObjects = []; 
+        const clock = new THREE.Clock();
+        const speed = 5;
+        const turnSpeed = 3.0;
+
+        function initGame() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 20, 60);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 10, -15);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            // Luces
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(50, 100, 50);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            scene.add(dirLight);
+
+            // Suelo
+            const planeGeometry = new THREE.PlaneGeometry(200, 200);
+            const planeMaterial = new THREE.MeshLambertMaterial({ color: 0x5c9c5c });
+            const ground = new THREE.Mesh(planeGeometry, planeMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            createPlayer();
+            spawnNoteObjects();
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enablePan = false;
+            controls.enableKeys = false;
+            controls.maxPolarAngle = Math.PI / 2 - 0.1; 
+            controls.minDistance = 5;
+            controls.maxDistance = 30;
+
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('keydown', (e) => onKeyChange(e, true));
+            window.addEventListener('keyup', (e) => onKeyChange(e, false));
+
+            animate();
+        }
+
+        function createPlayer() {
+            playerGroup = new THREE.Group();
+            const matSkin = new THREE.MeshLambertMaterial({ color: 0xffccaa });
+            const matShirt = new THREE.MeshLambertMaterial({ color: 0x3366cc });
+            const matPants = new THREE.MeshLambertMaterial({ color: 0x3333aa });
+
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), matSkin);
+            head.position.y = 1.75; head.castShadow = true; playerGroup.add(head);
+
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.75, 0.25), matShirt);
+            body.position.y = 1.125; body.castShadow = true; playerGroup.add(body);
+
+            const armGeo = new THREE.BoxGeometry(0.2, 0.75, 0.2);
+            limbs.armL = new THREE.Group();
+            limbs.armL.add(new THREE.Mesh(armGeo, matShirt));
+            limbs.armL.children[0].position.y = -0.25; limbs.armL.position.set(-0.4, 1.5, 0); playerGroup.add(limbs.armL);
+
+            limbs.armR = new THREE.Group();
+            limbs.armR.add(new THREE.Mesh(armGeo, matShirt));
+            limbs.armR.children[0].position.y = -0.25; limbs.armR.position.set(0.4, 1.5, 0); playerGroup.add(limbs.armR);
+
+            const legGeo = new THREE.BoxGeometry(0.22, 0.75, 0.22);
+            limbs.legL = new THREE.Group();
+            limbs.legL.add(new THREE.Mesh(legGeo, matPants));
+            limbs.legL.children[0].position.y = -0.375; limbs.legL.position.set(-0.15, 0.75, 0); playerGroup.add(limbs.legL);
+
+            limbs.legR = new THREE.Group();
+            limbs.legR.add(new THREE.Mesh(legGeo, matPants));
+            limbs.legR.children[0].position.y = -0.375; limbs.legR.position.set(0.15, 0.75, 0); playerGroup.add(limbs.legR);
+
+            scene.add(playerGroup);
+        }
+
+        function spawnNoteObjects() {
+            noteObjects.forEach(obj => scene.remove(obj));
+            noteObjects = [];
+
+            const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+            const edgesGeo = new THREE.EdgesGeometry(geometry);
+
+            // Generar 30 objetos aleatorios tomados del pool seleccionado
+            const count = 30;
+            const areaSize = 80;
+
+            for (let i = 0; i < count; i++) {
+                // Elegir una nota aleatoria del pool de notas activas
+                const randomIndex = Math.floor(Math.random() * appState.activeNotesPool.length);
+                const noteData = appState.activeNotesPool[randomIndex];
+                
+                const color = NOTE_COLORS[noteData.noteIndex];
+                const material = new THREE.MeshLambertMaterial({ color: color });
+                
+                const cube = new THREE.Mesh(geometry, material);
+                
+                const x = (Math.random() - 0.5) * areaSize;
+                const z = (Math.random() - 0.5) * areaSize;
+                
+                if (Math.abs(x) < 5 && Math.abs(z) < 5) continue;
+
+                cube.position.set(x, 1.5, z); 
+                cube.castShadow = true;
+                cube.receiveShadow = true;
+
+                // Guardamos tanto el index como la octava
+                cube.userData = {
+                    noteIndex: noteData.noteIndex,
+                    octave: noteData.octave,
+                    solved: false,
+                    floatOffset: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() * 0.02) + 0.01
+                };
+
+                const edges = new THREE.LineSegments(edgesGeo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 }));
+                cube.add(edges);
+
+                scene.add(cube);
+                noteObjects.push(cube);
+            }
+        }
+
+        function onKeyChange(event, isPressed) {
+            const key = event.key.toLowerCase();
+            switch(key) {
+                case 'w': case 'arrowup': keys.w = isPressed; break;
+                case 's': case 'arrowdown': keys.s = isPressed; break;
+                case 'a': case 'arrowleft': keys.a = isPressed; break;
+                case 'd': case 'arrowright': keys.d = isPressed; break;
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function checkCollisions() {
+            const playerPos = playerGroup.position;
+            const threshold = 2.0;
+
+            noteObjects.forEach(obj => {
+                if (obj.userData.solved) return;
+
+                const dist = playerPos.distanceTo(obj.position);
+                
+                if (dist < threshold) {
+                    if (appState.lastCollidedObject !== obj) {
+                        appState.lastCollidedObject = obj;
+                        
+                        // Set current challenge
+                        appState.currentChallenge = {
+                            noteIndex: obj.userData.noteIndex,
+                            octave: obj.userData.octave
+                        };
+                        
+                        obj.scale.set(1.2, 1.2, 1.2);
+                        setTimeout(() => obj.scale.set(1, 1, 1), 200);
+
+                        // Reproducir sonido con la octava específica
+                        playNoteSound(obj.userData.noteIndex, obj.userData.octave);
+
+                        const feedback = document.getElementById('feedback-msg');
+                        feedback.textContent = "¿Qué nota es?";
+                        feedback.style.color = "white";
+                    }
+                }
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const dt = clock.getDelta();
+            const time = Date.now() * 0.001;
+
+            let isMoving = false;
+            const moveSpeed = speed * dt;
+            const rotSpeed = turnSpeed * dt;
+
+            if (keys.a) playerGroup.rotation.y += rotSpeed;
+            if (keys.d) playerGroup.rotation.y -= rotSpeed;
+
+            const direction = new THREE.Vector3(0, 0, 1);
+            direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), playerGroup.rotation.y);
+
+            if (keys.w) { playerGroup.position.addScaledVector(direction, moveSpeed); isMoving = true; }
+            if (keys.s) { playerGroup.position.addScaledVector(direction, -moveSpeed); isMoving = true; }
+
+            if (isMoving) {
+                const angle = Math.sin(time * 10) * 0.8;
+                limbs.legL.rotation.x = angle; limbs.legR.rotation.x = -angle;
+                limbs.armL.rotation.x = -angle; limbs.armR.rotation.x = angle;
+            } else {
+                limbs.legL.rotation.x = 0; limbs.legR.rotation.x = 0;
+                limbs.armL.rotation.x = 0; limbs.armR.rotation.x = 0;
+            }
+
+            noteObjects.forEach(obj => {
+                if (!obj.userData.solved) {
+                    obj.position.y = 1.5 + Math.sin(time * 2 + obj.userData.floatOffset) * 0.2;
+                    obj.rotation.x += obj.userData.rotationSpeed;
+                    obj.rotation.y += obj.userData.rotationSpeed;
+                }
+            });
+
+            const stepsSound = document.getElementById('stepsSound');
+            if (isMoving) {
+                if (stepsSound.paused) stepsSound.play().catch(() => {});
+            } else {
+                if (!stepsSound.paused) {
+                    stepsSound.pause();
+                    stepsSound.currentTime = 0;
+                }
+            }
+
+            checkCollisions();
+
+            controls.target.copy(playerGroup.position);
+            controls.target.y += 1.5; 
+            controls.update();
+
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

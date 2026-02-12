@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3 uid="uid://djvk2qf8ub1q7"]
+
+[ext_resource type="Script" path="res://scenes/objects/NoteCube.gd" id="1_note_cube"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_notecube"]
+size = Vector3(1.5, 1.5, 1.5)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_notecube"]
+size = Vector3(1.5, 1.5, 1.5)
+
+[node name="NoteCube" type="Area3D" groups=["note_cube"]]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_note_cube")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_notecube")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_notecube")

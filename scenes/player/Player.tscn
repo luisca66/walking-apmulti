@@ -1,0 +1,149 @@
+[gd_scene load_steps=13 format=3 uid="uid://d2qp8h3m5v7wk"]
+
+[ext_resource type="Script" path="res://scenes/player/Player.gd" id="1_player"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.8
+height = 2.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_body"]
+albedo_color = Color(1, 0.251, 0.506, 1)
+roughness = 0.3
+metallic = 0.1
+
+[sub_resource type="SphereMesh" id="SphereMesh_body"]
+material = SubResource("StandardMaterial3D_body")
+radius = 1.0
+height = 2.0
+radial_segments = 32
+rings = 32
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_eye_white"]
+albedo_color = Color(1, 1, 1, 1)
+shading_mode = 0
+
+[sub_resource type="SphereMesh" id="SphereMesh_eye_white"]
+material = SubResource("StandardMaterial3D_eye_white")
+radius = 0.25
+height = 0.5
+radial_segments = 16
+rings = 16
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pupil"]
+albedo_color = Color(0, 0, 0, 1)
+shading_mode = 0
+
+[sub_resource type="SphereMesh" id="SphereMesh_pupil"]
+material = SubResource("StandardMaterial3D_pupil")
+radius = 0.1
+height = 0.2
+radial_segments = 8
+rings = 8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_foot"]
+albedo_color = Color(0.776, 0, 0.333, 1)
+roughness = 0.5
+
+[sub_resource type="SphereMesh" id="SphereMesh_foot"]
+material = SubResource("StandardMaterial3D_foot")
+radius = 0.4
+height = 0.8
+radial_segments = 16
+rings = 16
+
+[sub_resource type="SphereMesh" id="SphereMesh_toe"]
+material = SubResource("StandardMaterial3D_foot")
+radius = 0.2
+height = 0.4
+radial_segments = 16
+rings = 16
+
+[sub_resource type="SphereMesh" id="SphereMesh_hand"]
+material = SubResource("StandardMaterial3D_foot")
+radius = 0.3
+height = 0.6
+radial_segments = 16
+rings = 16
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_detection"]
+radius = 2.0
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1_player")
+
+[node name="PlayerModel" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="PlayerModel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+mesh = SubResource("SphereMesh_body")
+
+[node name="LeftEye" type="Node3D" parent="PlayerModel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, 1.8, -0.85)
+
+[node name="EyeWhite" type="MeshInstance3D" parent="PlayerModel/LeftEye"]
+mesh = SubResource("SphereMesh_eye_white")
+
+[node name="Pupil" type="MeshInstance3D" parent="PlayerModel/LeftEye"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.22)
+mesh = SubResource("SphereMesh_pupil")
+
+[node name="RightEye" type="Node3D" parent="PlayerModel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 1.8, -0.85)
+
+[node name="EyeWhite" type="MeshInstance3D" parent="PlayerModel/RightEye"]
+mesh = SubResource("SphereMesh_eye_white")
+
+[node name="Pupil" type="MeshInstance3D" parent="PlayerModel/RightEye"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.22)
+mesh = SubResource("SphereMesh_pupil")
+
+[node name="LeftFoot" type="Node3D" parent="PlayerModel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0.3, 0)
+
+[node name="FootBase" type="MeshInstance3D" parent="PlayerModel/LeftFoot"]
+transform = Transform3D(1, 0, 0, 0, 0.6, 0, 0, 0, 1.8, 0, 0, 0)
+mesh = SubResource("SphereMesh_foot")
+
+[node name="Toe" type="MeshInstance3D" parent="PlayerModel/LeftFoot"]
+transform = Transform3D(1.5, 0, 0, 0, 0.8, 0, 0, 0, 1, 0, -0.1, -0.7)
+mesh = SubResource("SphereMesh_toe")
+
+[node name="RightFoot" type="Node3D" parent="PlayerModel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0.3, 0)
+
+[node name="FootBase" type="MeshInstance3D" parent="PlayerModel/RightFoot"]
+transform = Transform3D(1, 0, 0, 0, 0.6, 0, 0, 0, 1.8, 0, 0, 0)
+mesh = SubResource("SphereMesh_foot")
+
+[node name="Toe" type="MeshInstance3D" parent="PlayerModel/RightFoot"]
+transform = Transform3D(1.5, 0, 0, 0, 0.8, 0, 0, 0, 1, 0, -0.1, -0.7)
+mesh = SubResource("SphereMesh_toe")
+
+[node name="LeftHand" type="MeshInstance3D" parent="PlayerModel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1, 1.5, 0)
+mesh = SubResource("SphereMesh_hand")
+
+[node name="RightHand" type="MeshInstance3D" parent="PlayerModel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1, 1.5, 0)
+mesh = SubResource("SphereMesh_hand")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="DetectionArea" type="Area3D" parent="."]
+collision_layer = 1
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("SphereShape3D_detection")
+
+[node name="CameraPivot" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+
+[node name="CameraBoom" type="Node3D" parent="CameraPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 9)
+
+[node name="Camera3D" type="Camera3D" parent="CameraPivot/CameraBoom"]
+current = true
