@@ -2,6 +2,9 @@ extends Node3D
 
 
 func _ready() -> void:
+	# Aplicar textura de pasto procedural al suelo
+	_apply_grass_texture()
+
 	# Configurar notas seleccionadas (C3, F#3, C4)
 	GameManager.selected_notes = [
 		{"note_index": 0, "octave": 3},   # C3
@@ -31,6 +34,18 @@ func _ready() -> void:
 
 	# Iniciar música de fondo
 	AudioManager.start_music()
+
+func _apply_grass_texture():
+	var ground = $Ground
+	if ground:
+		var grass_tex = TextureGenerator.generate_grass()
+		var grass_mat = StandardMaterial3D.new()
+		grass_mat.albedo_texture = grass_tex
+		grass_mat.uv1_scale = Vector3(50.0, 50.0, 1.0)
+		grass_mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		grass_mat.roughness = 0.95
+		ground.set_surface_override_material(0, grass_mat)
+		print("Grass texture applied to ground")
 
 
 func _on_player_hit_cube(note_index: int, octave: int, cube: Area3D) -> void:

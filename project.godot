@@ -19,6 +19,7 @@ config/features=PackedStringArray("4.6")
 
 GameManager="*res://autoload/GameManager.gd"
 AudioManager="*res://autoload/AudioManager.gd"
+TextureGenerator="*res://autoload/TextureGenerator.gd"
 
 [debug]
 
