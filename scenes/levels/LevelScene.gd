@@ -7,6 +7,9 @@ extends Node3D
 @onready var level_complete = $LevelComplete
 
 func _ready():
+	# Aplicar textura de pasto procedural al suelo
+	_apply_grass_texture()
+
 	GameManager.selected_notes = GameManager.get_current_level_notes()
 	GameManager.selected_instrument = "Piano"
 	GameManager.reset_level_state()
@@ -25,6 +28,18 @@ func _ready():
 
 	if not AudioManager.music_player.playing:
 		AudioManager.start_music()
+
+func _apply_grass_texture():
+	var ground = get_node_or_null("Ground")
+	if ground:
+		var grass_tex = TextureGenerator.generate_grass()
+		var grass_mat = StandardMaterial3D.new()
+		grass_mat.albedo_texture = grass_tex
+		grass_mat.uv1_scale = Vector3(50.0, 50.0, 1.0)
+		grass_mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		grass_mat.roughness = 0.95
+		ground.set_surface_override_material(0, grass_mat)
+		print("Grass texture applied to ground")
 
 func _on_level_reset():
 	note_spawner.reset_all_cubes()
