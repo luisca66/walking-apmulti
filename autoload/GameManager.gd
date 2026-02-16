@@ -9,6 +9,11 @@ var selected_notes: Array = []
 var selected_instrument: String = "Piano"
 var is_playing: bool = false
 
+# Constantes de arena
+const ARENA_SIZE: float = 300.0  # El área es 300x300 metros
+const WALL_HEIGHT: float = 6.0
+const WALL_THICKNESS: float = 1.0
+
 # Constantes
 const NOTES: PackedStringArray = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 const NOTE_COLORS: Array[Color] = [

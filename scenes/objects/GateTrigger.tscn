@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3 uid="uid://gate_trigger_v1"]
+
+[ext_resource type="Script" path="res://scenes/objects/GateTrigger.gd" id="1_gatetrigger"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(8, 6, 4)
+
+[node name="GateTrigger" type="Area3D"]
+script = ExtResource("1_gatetrigger")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_1")

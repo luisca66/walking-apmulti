@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cloud_procedural_v1"]
+
+[ext_resource type="Script" path="res://scenes/objects/Cloud.gd" id="1_cloud"]
+
+[node name="Cloud" type="Node3D"]
+script = ExtResource("1_cloud")

@@ -5,6 +5,7 @@ extends Area3D
 @export var octave: int = 4
 
 # Variables de estado
+var override_color: Color = Color(-1, -1, -1)  # Valor inválido = no override
 var solved: bool = false
 var float_offset: float = 0.0
 var rotation_speed: float = 0.015
@@ -22,13 +23,16 @@ func _ready() -> void:
 	float_offset = randf() * TAU
 	rotation_speed = randf_range(0.01, 0.03)
 
-	# Crear material con colores basados en la nota
-	var material = StandardMaterial3D.new()
-	material.albedo_color = GameManager.NOTE_COLORS[note_index]
-	material.emission_enabled = true
-	material.emission = GameManager.NOTE_COLORS[note_index]
-	material.emission_energy_multiplier = 0.3
-	mesh_instance.material_override = material
+	# Crear material con el color override o fallback
+	var mat = StandardMaterial3D.new()
+	if override_color.r >= 0:
+		mat.albedo_color = override_color
+	else:
+		mat.albedo_color = Color(0.5, 0.8, 1.0)  # Fallback celeste
+	mat.emission_enabled = true
+	mat.emission = mat.albedo_color
+	mat.emission_energy_multiplier = 0.3
+	mesh_instance.material_override = mat
 
 	# Agregar al grupo para detección
 	add_to_group("note_cube")

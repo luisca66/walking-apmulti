@@ -13,7 +13,7 @@ func _ready() -> void:
 	print("AudioManager initialized")
 
 	# Construir playlist de jazz
-	for i in range(1, 9):
+	for i in range(1, 11):
 		var filename = "res://assets/music/jazz-%02d.mp3" % i
 		music_playlist.append(filename)
 
